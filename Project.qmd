@@ -1,0 +1,687 @@
+---
+title: "Analysis of Selected Player Statistics from the Top 5 European Football Leagues for the 2023/24 Season."
+author: "Jakub Szamik"
+date: "2025-01-01"
+format:   
+  html:
+   self-contained: false
+   toc: true
+   toc-title: "Spis treści"
+   toc-depth: 2
+   toc-location: left
+   number-sections: false
+   execute:
+    warning: false 
+editor: visual
+subtitle: "Data acquisition and visualization project"
+---
+
+```{r ,include=FALSE}
+
+library(ggplot2)
+library(tidyverse)
+library(readxl)
+library(readr)
+library(dplyr)
+library(patchwork)
+library(ggpattern)
+library(magick)
+library(cartography)
+library(plotly)
+library(leaflet)
+options(viewer = rstudioapi::viewer)
+library(sf)
+library(htmltools)
+library(htmlwidgets)
+library(networkD3)
+library(circlepackeR)
+library(devtools)
+library(circlepackeR)
+library(data.tree)
+library(treemap)
+library(collapsibleTree)
+library(jpeg)
+library(grid)
+library(wordcloud2)
+library(RColorBrewer)
+
+```
+
+```{r, include=FALSE}
+pilkarze1 <- read_csv("top5players.csv")
+pilkarze <- data.frame(pilkarze1)
+pilkarze
+```
+
+![](glowny.png)
+
+# 1. Introduction to the Project Objectives.
+
+In modern football, increasing attention is given to minor statistics that do not necessarily reflect a player's true abilities. A particularly interesting phenomenon is the overestimation of certain players based on their nationality or the league they play in. In the first part of this project, I will primarily compare the English Premier League, often considered the best in the world, with its main competitors from the European continent, as well as compare players of different nationalities. Starting with the most crucial aspects of football—goals and assists.
+
+# 2. Goals and Assists Comparison Between Leagues.
+
+```{r,include=FALSE}
+  goals_pl <-pilkarze %>% 
+    filter(League=="eng Premier League") %>% 
+    select(Player,League,Team,Gls,X90s)
+  
+  players_pl <- pilkarze %>% 
+    filter(League=="eng Premier League")
+  players_pl$X90s <- floor(players_pl$X90s)
+  players_pl
+  
+  top_10_goals_pl <- goals_pl %>% 
+    arrange(desc(Gls)) %>% 
+    slice_head(n=10)
+  top_10_goals_pl
+  
+  players_rote <- pilkarze %>% 
+    filter(League!="eng Premier League")
+   players_rote$X90s <- floor(players_rote$X90s)
+  
+  goals_excluding_pl <-pilkarze %>% 
+    filter(League!="eng Premier League") %>% 
+    select(Player,League,Team,Gls,X90s)
+  
+  top_10_goals_excluding_pl <- goals_excluding_pl %>% 
+    arrange(desc(Gls)) %>% 
+    slice_head(n=10)
+  view(top_10_goals_excluding_pl)
+  
+  top10_as_pl <- players_pl %>% 
+    arrange(desc(Ast)) %>% 
+    slice_head(n=10) %>% 
+    select(Player,League,Team,Ast)
+  
+  top10as_rote <- players_rote %>% 
+    arrange(desc(Ast)) %>% 
+    slice_head(n=10) %>% 
+    select(Player,League,Team,Ast)
+  view(top10as_rote)
+  
+  top10_as <- pilkarze %>% 
+    arrange(desc(Ast)) %>% 
+    slice_head(n=100) %>% 
+    select(Player,League,Team,Ast)
+  top10_as
+  
+  top10GA <- pilkarze %>% 
+    arrange(desc(G.A)) %>% 
+    slice_head(n=15) %>% 
+    select(Player,League,Team,G.A)
+  
+  strikers10 <- pilkarze %>% 
+    filter(Pos=="FW") %>% 
+    filter(X90s>=10) %>% 
+    select(Player,Gls,Pos,League,X90s)
+  strikers10
+  
+ 
+  
+  kraje <- pilkarze %>% 
+    distinct(Nation)
+  view(kraje)
+```
+
+## 2.1 Top Scorers in England vs. the Rest of Europe
+
+```{r,echo=FALSE}
+
+
+
+ggplot(top_10_goals_pl,aes(x=Player,y=Gls,fill=Player))+
+  coord_flip()+
+   scale_fill_brewer(palette = "Set3")+
+  geom_bar(stat = "identity")+
+  labs(x="Player",y="Goals")+
+  geom_text(aes(label = Gls), hjust = -0.2, size = 3) +
+  ggtitle("Premier League")+
+  theme(plot.title = element_text(hjust=0.5),legend.position = "none")
+
+
+```
+
+```{r,echo=FALSE}
+ggplot(top_10_goals_excluding_pl,aes(x=Player,y=Gls,fill=Player))+
+  coord_flip()+
+   scale_fill_brewer(palette = "Set3")+
+  geom_bar(stat = "identity")+
+  labs(x="Player",y="Goals")+
+  geom_text(aes(label = Gls), hjust = -0.2, size = 3) +
+  ggtitle("Other Leagues")+
+  theme(plot.title = element_text(hjust=0.5),legend.position = "none")
+view(goals_excluding_pl)
+```
+
+As seen in the charts, the English league performs relatively well in Europe, with three players ranking in the top 10 goal scorers. However, the highest-scoring players in England fell short of competing with the absolute best. This does not necessarily mean that other leagues are superior, as stronger leagues often host better defenders, which leads to fewer goals scored by offensive players. Notably, Harry Kane dominated the goal-scoring charts despite playing fewer matches.
+
+## 2.2 Direct Comparison of All Strikers Who Played at Least 10 Full Matches.
+
+```{r, echo=FALSE}
+ggplot(strikers10, aes(x = League, y = Gls, fill = League)) +
+  geom_boxplot(outlier.color = "red", outlier.size = 2) + # Pudełka z wyróżnionymi wartościami odstającymi
+  labs(
+    title = "Goal distribution in top 5 leagues",
+    x = "League",
+    y = "Goals"
+  ) +
+  theme_minimal() + # Estetyczny styl
+  scale_fill_brewer(palette = "Set1")
+
+# NIe wiem czy tego nie usunac 
+```
+
+-   **Bundesliga and Serie A**: Most diverse in terms of both average players and top scorers.
+
+-   **Premier League and La Liga**: More consistent results with standout players (visible outliers).
+
+-   **Ligue 1**: The most balanced league, with smaller differences between players and fewer dominant strikers.
+
+# 3. Age Factor.
+
+```{r ,echo=FALSE}
+
+z=runif(100,0,1)
+wiek <- pilkarze %>% 
+  group_by(Age) %>% 
+  summarise(Total_GA = sum(G.A, na.rm = TRUE))
+
+srednia_wieku <- mean(pilkarze$Age,na.rm=T)
+
+view(wiek)
+
+ggplot(wiek,aes(x=Age,y=Total_GA))+
+  geom_area_pattern(data = wiek,pattern="gradient",pattern_fill="blue",pattern_fill2="white")+
+  geom_line(colour="black",size=1)+
+  labs(x="Age",y="G/A")+
+  geom_vline(aes(xintercept=srednia_wieku),color="red",linewidth=1,linetype="dashed")+
+  theme_minimal()
+```
+
+The chart above illustrates the age distribution of players in relation to their goal involvements. The most effective players are concentrated around 25 years old, with a declining trend on both sides (younger and older players). The red dashed line marks the average age in the top 5 leagues, which is precisely 25 years. This is no coincidence, as this age balances acquired experience with youthful energy.
+
+# 4. Nationality-Based Trends.
+
+```{r, include=FALSE}
+
+narodowosci <- c("eng ENG", "us USA", "fr FRA", "ma MAR", "gh GHA", "br BRA", "it ITA", "ar ARG", "ci CIV", "ng NGA", "at AUT", "am ARM", "de GER", "ch SUI", "es ESP", "cr CRC", "ba BIH", "dz ALG", "bj BEN", "no NOR", "nl NED", "py PAR", "ga GAB", "pt POR", "se SWE", "mx MEX", "uy URU", "sn SEN", "pa PAN", "dk DEN", "sct SCO", "rs SRB", "jm JAM", "ve VEN", "il ISR", "is ISL", "jp JPN", "al ALB", "tg TOG", "ir IRN", "hr CRO", "cd COD", "gn GUI", "gr GRE", "cm CMR", "zm ZAM", "bf BFA", "gd GRN", "cz CZE", "lu LUX", "cv CPV", "wls WAL", "sr SUR", "ao ANG", "tn TUN", "pl POL", "sk SVK", "gw GNB", "si SVN", "ml MLI","gm GAM", "ro ROU", "be BEL", "co COL", "nir NIR", "cl CHI", "ca CAN", "nz NZL", "ec ECU", "tr TUR", "ie IRL", "zw ZIM", "gq EQG", "km COM", "mq MTQ", "mk MKD", "ua UKR", "ht HAI", "eg EGY", "do DOM", "za RSA", "au AUS", "lt LTU", "ru RUS", "bg BUL", "hu HUN", "kr KOR", "ph PHI", "fi FIN","sl SLE", "cy CYP", "uz UZB", "cf CTA", "me MNE", "ge GEO", "mg MAD", "mz MOZ", "pe PER", "hn HON", "cg CGO", "xk KVX", "bi BDI", "ke KEN", "sy SYR", "gf GUF", "jo JOR", "mt MLT")
+narodowosci_pelne <- c(
+  "Anglia", "Stany Zjednoczone", "Francja", "Maroko", "Ghana", "Brazylia", "Włochy", "Argentyna", 
+  "Wybrzeże Kości Słoniowej", "Nigeria", "Austria", "Armenia", "Niemcy", "Szwajcaria", "Hiszpania", 
+  "Kostaryka", "Bośnia i Hercegowina", "Algieria", "Benin", "Norwegia", "Holandia", "Paragwaj", 
+  "Gabon", "Portugalia", "Szwecja", "Meksyk", "Urugwaj", "Senegal", "Panama", "Dania", 
+  "Szkocja", "Serbia", "Jamajka", "Wenezuela", "Izrael", "Islandia", "Japonia", "Albania", 
+  "Togo", "Iran", "Chorwacja", "Demokratyczna Republika Konga", "Gwinea", "Grecja", "Kamerun", 
+  "Zambia", "Burkina Faso", "Grenada", "Czechy", "Luksemburg", "Republika Zielonego Przylądka", 
+  "Walia", "Surinam", "Angola", "Tunezja", "Polska", "Słowacja", "Gwinea Bissau", "Słowenia", 
+  "Mali", "Gambia", "Rumunia", "Belgia", "Kolumbia", "Irlandia Północna", "Chile", "Kanada", 
+  "Nowa Zelandia", "Ekwador", "Turcja", "Irlandia", "Zimbabwe", "Gwinea Równikowa", "Komory", 
+  "Martynika", "Macedonia Północna", "Ukraina", "Haiti", "Egipt", "Dominikana", "Republika Południowej Afryki", 
+  "Australia", "Litwa", "Rosja", "Bułgaria", "Węgry", "Korea Południowa", "Filipiny", "Finlandia", 
+  "Sierra Leone", "Cypr", "Uzbekistan", "Republika Środkowoafrykańska", "Czarnogóra", "Gruzja",  "Madagaskar", "Mozambik", "Peru", "Honduras", "Kongo", "Kosowo", "Burundi", "Kenia",   "Syria", "Gujana Francuska", "Jordania", "Malta")
+
+length(narodowosci_pelne)
+    
+latitudes <- c(
+51.5074, 38.9072, 48.8566, 34.020882, 5.6037, -15.7801, 41.9028, -34.6037, 6.8197, 9.0579, 
+48.2082, 40.1792, 52.5200, 46.9481, 40.4168, 9.9281, 43.8486, 36.7538, 6.4969, 59.9139, 
+52.3676, -25.2637, 0.4167, 38.7169, 59.3293, 19.4326, -34.9011, 14.6928, 8.9833, 55.6761, 
+55.9533, 44.8176, 17.9772, 10.4806, 31.7683, 64.1355, 35.6762, 41.3275, 6.1375, 35.6892, 
+45.8131, -4.4419, 9.5085, 37.9838, 3.8480, -15.3875, 12.6392, 12.0560, 50.0755, 49.6117, 
+14.9330, 51.4816, 5.8663, -8.8390, 36.8000, 52.2298, 48.1482, 11.8817, 46.0511, 12.6392, 
+13.4549, 44.4268, 50.8503, 4.7110, 54.5973, -33.4489, 45.4215, -41.2867, -0.1807, 39.9334, 
+53.3498, -17.8292, 3.7500, -11.7027, 14.6167, 41.9981, 50.4501, 18.5944, 30.0444, 18.4861, 
+-25.7461, -35.2809, 54.6892, 55.7558, 42.6975, 47.4979, 37.5665, 14.5995, 60.1692, 46.0511, 
+35.1856, 41.2995, 4.3947, 42.4411, 41.7151, -18.8792, -25.9654, -12.0464, 13.9070, -4.2634, 
+42.6722, -3.4265, -1.2867, 33.5138, 4.9227, 31.9634, 35.8997)
+latitudes <- round(latitudes,2)
+latitudes
+longitudes <- c(-0.1278, -77.0369, 2.3522, -6.84165, -0.1870, -47.9292, 12.4964, -58.3816, -5.2769, 7.4951, 
+16.3738, 44.4991, 13.4050, 7.4474, -3.7038, -84.0907, 18.3564, 3.0588, 2.6285, 10.7522, 
+4.9041, -57.5759, 9.4670, -9.1395, 18.0686, -99.1332, -56.1645, -17.4467, -79.5167, 
+12.5683, -3.1883, 20.4633, -76.7936, -66.9036, 35.2137, -21.8954, 139.6503, 19.8189, 
+1.2123, 51.3890, 15.978, 15.2663, -13.7122, 23.7275, 11.5021, 28.3228, -1.4956, 
+-61.7488, 14.4378, 6.13, -23.5133, -3.1791, -55.1714, 13.2894, 10.1792, 21.0118, 
+17.1067, -15.6170, 14.5051, -8.0029, -16.5790, 26.1025, 4.3517, -74.0721, -5.9301, 
+-70.6693, -75.6992, 174.775, -78.4678, 32.8597, -6.2603, 31.0522, 8.7520, 43.2473, 
+-61.0833, 21.4254, 30.5000, -72.3074, 31.2357, -69.9312, 18.4241, 149.1300, 
+25.2798, 37.6173, 23.3242, 19.0402, 126.9780, 120.9842, 24.9402, 14.5051, 33.3823, 
+69.2401, 18.5582, 19.2636, 44.8271, 47.5079, 32.5892, -77.0428, -85.9595, 15.2429, 
+21.2285, 29.9291, 36.8172, 36.2765, -52.3135, 35.9304, 14.5147
+)
+longitudes <- round(longitudes,2)
+
+player_count_by_country <- pilkarze %>%
+  group_by(Nation) %>%
+  summarise(player_count = n())
+
+player_count_by_country <-  na.omit(player_count_by_country)
+player_count_by_country$latitudes <- latitudes
+player_count_by_country$longitudes <- longitudes
+
+player_count_by_country
+
+
+
+count <- pilkarze %>% 
+  summarise(player_count1=n()) 
+count
+
+
+data <- data.frame(
+  kraje = narodowosci,
+  latitudes = latitudes,
+  longitudes=longitudes
+)
+data
+
+player_count_by_country <- player_count_by_country %>%
+  select(-longitudes)
+player_count_by_country
+player_count_by_country <- player_count_by_country %>%
+  select(-latitudes)
+player_count_by_country
+
+colnames(player_count_by_country)[1] <- "kraje"
+
+
+
+player_count_by_country
+
+
+merged <- inner_join(data,player_count_by_country,by="kraje")
+
+merged ## to dziala jest bomba 
+merged
+
+merged$kraje <- narodowosci_pelne
+
+
+# Tworzenie palety kolorów
+mybins <- seq(0, max(merged$player_count, na.rm = TRUE), by = 1)
+mypalette <- colorBin(palette = "YlGnBu", domain = merged$player_count, bins = mybins)
+
+merged$player_count <- as.numeric(merged$player_count)
+
+merged 
+```
+
+```{r, include=FALSE,echo=FALSE , warning=FALSE, message=FALSE}
+mytext <- paste(
+  "Country: ", merged$kraje, "<br/>",
+  "Number of Players: ", merged$player_count,
+  sep = ""
+) %>% lapply(htmltools::HTML)
+
+bounds <- c(min(merged$longitudes, na.rm = TRUE), min(merged$latitudes, na.rm = TRUE),
+            max(merged$longitudes, na.rm = TRUE), max(merged$latitudes, na.rm = TRUE))
+
+
+m <- leaflet(merged) %>%
+  addTiles() %>%
+  fitBounds(lng1 = bounds[1], lat1 = bounds[2], lng2 = bounds[3], lat2 = bounds[4]) %>%
+  addProviderTiles("Esri.WorldImagery") %>% 
+  addCircleMarkers(
+    ~longitudes, ~latitudes,
+    fillColor = "darkred",  # Każdy punkt ma kolor niebieski
+    fillOpacity = 0.7,
+    color = "white", 
+    stroke = FALSE,
+    label = mytext,
+    labelOptions = labelOptions(
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      textsize = "13px",
+      direction = "auto"
+    )
+  ) %>%
+  addLegend(
+    colors = "darkred",  # Kolor legendy niebieski
+    labels = "Players",  # Tekst w legendzie
+    opacity = 0.7,
+    title = "Number of Players",
+    position = "bottomright"
+  )
+
+m
+```
+
+```{r, echo=FALSE}
+library(leaflet)
+library(htmltools)
+library(RColorBrewer)
+
+# Użycie palety kolorów
+palette <- colorBin(palette = "YlOrRd", bins = c(0, 5,10,20, 50, 100,150,200, Inf), domain = merged$player_count)
+
+# Tworzenie etykiet HTML dla każdego kraju
+mytext <- paste(
+  "Country: ", merged$kraje, "<br/>",
+  "Number of Players: ", merged$player_count,
+  sep = ""
+) %>% lapply(htmltools::HTML)
+
+  
+bounds <- c(
+  min(merged$longitudes, na.rm = TRUE), min(merged$latitudes, na.rm = TRUE),
+  max(merged$longitudes, na.rm = TRUE), max(merged$latitudes, na.rm = TRUE)
+)
+
+# Tworzenie mapy
+m <- leaflet(merged) %>%
+  addTiles() %>%
+  fitBounds(lng1 = bounds[1], lat1 = bounds[2], lng2 = bounds[3], lat2 = bounds[4]) %>%
+  addProviderTiles("Esri.WorldImagery") %>% 
+  addCircleMarkers(
+    ~longitudes, ~latitudes,
+    fillColor = ~palette(player_count),  # Kolor zależny od liczby zawodników
+    fillOpacity = 0.7,
+    color = "white", 
+    stroke = FALSE,
+    label = mytext,
+    labelOptions = labelOptions(
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      textsize = "13px",
+      direction = "auto"
+    )
+  ) %>%
+  addLegend(
+    pal = palette,  
+    values = merged$player_count,  
+    opacity = 0.7,
+    title = "Number of Players",
+    position = "bottomright"
+  )
+
+# Wyświetlenie mapy
+m
+
+```
+
+The map highlights the number of representatives from each country playing in the top 5 leagues. Most players come from Europe, with the top three being Spain, France, and Germany. South American countries such as Brazil and Argentina also have strong representation. Africa shows a decent player density, though not in absolute numbers. Asia has the weakest representation relative to its population size.
+
+```{r,include=FALSE}
+##jedziemy z ramka danych ktora bedzie miala asysty i gole z danego kraju
+
+plot_G_and_A <- pilkarze %>%
+  group_by(Nation) %>%
+  summarise(
+    TotalGoals = sum(Gls),           
+    TotalAssists = sum(Ast),         
+    PlayerCount = n()                
+  ) %>%
+  filter(TotalGoals >= 100) %>%       
+  mutate(
+    AvgGoals = TotalGoals / PlayerCount,    # Średnia liczba goli na zawodnika
+    AvgAssists = TotalAssists / PlayerCount
+  ) %>%
+  arrange(desc(AvgGoals)) %>%       
+  slice_head(n = 10) %>%             
+  pivot_longer(
+    cols = c(AvgGoals, AvgAssists), 
+    names_to = "Type", 
+    values_to = "Value"              
+  )
+
+global_means <- plot_G_and_A %>%
+  group_by(Type) %>%
+  summarise(GlobalMean = mean(Value))
+
+##plot_G_and_A
+
+
+ggplot(plot_G_and_A,aes(x=Nation,y=Value,fill=Type))+
+  geom_bar(stat = "identity",position=position_dodge())+
+    scale_fill_brewer(palette = "Set1")+ #nie w kazdej palecie jest wystarczajaca ilosc barwi
+    geom_hline(
+    data = global_means, 
+    aes(yintercept = GlobalMean, color = Type), 
+    linetype = "dashed", size = 0.8
+  ) +
+
+  labs(x="Kraj",y="Srednia goli i Asyst",fill="Oznaczenie")+
+  ggtitle("Najwiekszy sredni udzial przy bramkach z podziałem na kraje")+
+  theme(plot.title = element_text(hjust=0.5))
+
+```
+
+```{r, echo=FALSE}
+top_countries <- pilkarze %>% 
+  count(Nation) %>% 
+  top_n(10,wt=n) %>% 
+  pull(Nation)
+
+filtred <- pilkarze %>% 
+  filter(Nation %in% top_countries)
+
+percentcos <- filtred %>% 
+  count(Nation,League) %>% 
+  group_by(Nation) %>% 
+  mutate(Percentage=n/sum(n)*100) %>% 
+  ungroup()
+
+
+dluga <- percentcos %>%
+  rename(source = Nation, target = League, value = Percentage)
+
+nodes <- data.frame(name = unique(c(dluga$source, dluga$target)))
+
+dluga$IDsource <- match(dluga$source, nodes$name) - 1
+dluga$IDtarget <- match(dluga$target, nodes$name) - 1
+
+ColourScal <- 'd3.scaleOrdinal().range(["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854"])'
+
+
+# Wykres Sankey'a
+sankeyNetwork(
+  Links = data.frame(dluga), Nodes = nodes,
+  Source = "IDsource", Target = "IDtarget",
+  Value = "value", NodeID = "name",
+  sinksRight = FALSE, colourScale = ColourScal,
+  nodeWidth = 30, fontSize = 12, nodePadding = 15
+)
+  
+```
+
+A subsequent chart illustrates the percentage of players from each country in Europe's top leagues. Unsurprisingly, about 90% of players compete in their domestic leagues. For those who cannot, language often determines their destination—for example, many Argentinians play in Spain.
+
+# 5. Match Endurance.
+
+```{r,include=FALSE}
+minuty_ex_gk <- pilkarze %>% 
+  filter(Pos!="GK") %>% 
+  select(Min,Player,League,Team,Pos)
+ minuty_ex_gk
+
+minuty_top_ex_gk <- minuty_ex_gk %>% 
+  arrange(desc(Min)) %>% 
+  slice_head(n=50)
+minuty_top_ex_gk
+
+ggplot(minuty_top_ex_gk,aes(x=Player,y=Min,fill=League))+
+  geom_bar(stat="identity")+
+  coord_flip()
+view(pilkarze)
+```
+
+```{r, echo=FALSE}
+plot_ly(minuty_top_ex_gk,
+  x = ~League,
+  y = ~Pos,
+  z = ~Min,
+  text = ~paste("Name:", Player, "<br>Position:", Pos, "<br>League:", League, "<br>Minutes:", Min,"Team:",Team),
+  hoverinfo = "text",  # Wyświetlanie tekstu w dymku
+  type = "scatter3d",
+  mode = "markers",
+  marker = list(size = 5, color = ~Min, colorscale = "Viridis",showscale=TRUE,colorbar=list(title="Minutes"))) %>% 
+  layout(
+    scene = list(
+      xaxis = list(title = "League"),  # Nowa nazwa osi X
+      yaxis = list(title = "Position"),        # Nowa nazwa osi Y
+      zaxis = list(title = "Minutes")   # Nowa nazwa osi Z
+    )
+)
+```
+
+The chart displays the 15 outfield players with the most minutes played during the season. Notably, only three of the top five leagues are represented, as the German and French leagues have two fewer teams, reducing the maximum available minutes. Most of the featured players are defenders, as their stronger physique and lower injury risk allow them to play more matches.
+
+# 6. Most Penalized Players.
+
+```{r, echo=FALSE}
+r_and_y_cards <- pilkarze %>%
+  group_by(League) %>%
+  summarise(
+    Yellows = sum(CrdY),           # Sumowanie goli
+    Reds = sum(CrdR),         # Sumowanie asyst
+    PlayerCount = n()                # Liczba zawodników w każdej reprezentacji
+  ) %>%
+   slice_head(n = 10) %>%             # Wybór 10 najlepszych reprezentacji
+  pivot_longer(
+    cols = c(Yellows, Reds), 
+    names_to = "Type", 
+    values_to = "Value"              # Przekształcenie danych do formatu długiego
+  )
+
+
+
+
+
+ggplot(r_and_y_cards,aes(x=League,y=Value,fill=Type))+
+  geom_bar(stat = "identity",position=position_dodge())+
+  scale_fill_manual(values=c("Yellows"="#E6B800", "Reds"="red")) +
+  labs(x="League",y="number of yellow and red cards")+
+  ggtitle("Number of yellow and red cards")+
+  geom_text(aes(label = Value), hjust = 0, size = 3) +
+  theme(plot.title = element_text(hjust=0.5))
+
+
+
+```
+
+The chart indicates significant disparities in yellow and red cards across leagues. La Liga records about 150% more yellow cards than France's Ligue 1. Spain has the highest figures for both yellow and red cards, suggesting a more aggressive playing style.
+
+```{r,echo=FALSE}
+yel_play <- pilkarze %>% 
+  arrange(desc(CrdY)) %>%
+  slice_head(n=10) %>% 
+  select(Player,CrdY)
+
+red_play <- pilkarze %>% 
+  arrange(desc(CrdR)) %>%
+  slice_head(n=10) %>% 
+  select(Player,CrdR)
+
+plocik1 <- ggplot(yel_play,aes(x=Player,y=CrdY,fill=Player))+
+          geom_bar(stat="identity")+
+          coord_flip()+
+  scale_fill_brewer(palette = "Set3")+
+  labs(x="Number of yellow cards",y="Player")+
+  theme(plot.title = element_text(hjust=0.5),legend.position = "none")
+
+plocik2 <- ggplot(red_play,aes(x=Player,y=CrdR,fill=Player))+
+          geom_bar(stat="identity")+
+          coord_flip()+
+  scale_fill_brewer(palette = "Set3")+
+  labs(x="Number of red cards",y="Player")+
+   theme(plot.title = element_text(hjust=0.5),legend.position = "none")
+plocik1+plocik2
+```
+
+# 7. Best XI of Last and Current Season Based on Match Ratings.
+
+|                             |                             |
+|-----------------------------|-----------------------------|
+| ![](2324.jpg){width="1100"} | ![](2425.png){width="1100"} |
+
+The image compares the best "eleven" players from last season (left) and the current season (right), according to WhoScored ratings. Player ratings are on a 10-point scale, with higher values indicating better performances over the season. A noticeable trend is the dominance of Bayern Munich and PSG players, which is unsurprising given their stronghold in their respective leagues.
+
+# 8. Expected Goals (xG).
+
+::: {style="border: 1px solid #ccc; padding: 10px;"}
+<iframe src="circle.html" width="100%" height="600px" frameborder="0">
+
+</iframe>
+:::
+
+```{r,include=FALSE}
+Pls_xG <- pilkarze %>% 
+  arrange(desc(xG)) %>% 
+  slice_head(n = 50) %>% 
+  select(Player, League, Team, xG)
+
+Pls_xG$pathString <- paste("Piłka Nożna", Pls_xG$League, Pls_xG$Player, Pls_xG$xG, sep = "/")
+
+hierarchy <- as.Node(Pls_xG)
+
+p1 <- circlepackeR(
+  hierarchy,
+  size = "xG", 
+  color_min = "darkcyan",  
+  color_max = "white"
+)
+
+p1
+
+
+```
+
+The xG (Expected Goals) statistic calculates the probability of scoring from a given position based on factors like distance from goal. A value of 0.38 xG is considered a high chance. The chart above features the 50 players with the highest total xG from last season. Notably, Ligue 1 and Serie A have fewer top-performing players in this category.
+
+# 9. Best Assist Providers in Europe.
+
+```{r,echo=FALSE}
+wordcloud_data <- top10_as %>%
+  mutate(freq=log(Ast)*50,
+    color = case_when(
+    League == "Liga1" ~ "#1b9e77", # Zielony dla Liga1
+    League == "Liga2" ~ "#d95f02", # Pomarańczowy dla Liga2
+    League == "Liga3" ~ "#7570b3",
+    League == "Liga4" ~ "blue",
+    League == "Liga5" ~ "red"# Fioletowy dla Liga3
+  )) %>%
+  select(word = Player, freq = Ast, color)
+
+wordcloud_data$color <- brewer.pal(n = 5, name = "Set1")[as.numeric(as.factor(top10_as$League))]
+
+wordcloud2(
+  data = wordcloud_data,
+  size = 0.15,    # Skalowanie chmury
+  shape = "pentagon",
+  color = wordcloud_data$color,   # Kolory w zależności od ligi
+  backgroundColor = "white"       # Tło
+)
+```
+
+Examining the top 100 assist providers in the top 5 leagues, special attention goes to players from the English Premier League and the German Bundesliga, marked in blue and red, respectively. No player significantly outperformed in terms of total assists, but nearly 40% of the top assist providers played for English clubs last season.
+
+# 10. Project Summary.
+
+::: {style="border: 1px solid #ccc; padding: 10px;"}
+<iframe src="lastplot.html" width="100%" height="600px" frameborder="0">
+
+</iframe>
+:::
+
+```{r,echo=FALSE}
+
+onsofof <- 4
+end <- pilkarze %>% 
+  select(Player,League,Team)
+
+lastplot <- collapsibleTree(pilkarze,
+                            hierarchy = c("League","Team","Player"),
+                            root="Pilkarze",width=800,
+                            zoomable = TRUE)
+#lastplot
+saveWidget(lastplot, "lastplot.html", selfcontained = TRUE)
+```
+
+Analyzing football statistics makes it difficult to draw definitive conclusions. Many aspects of football are subjective, meaning that for some, a club or league is the best due to personal preference. As demonstrated in previous charts, many players cannot be directly compared, especially based on position. While statistics provide valuable insights, many elements of football cannot be quantified. The final chart showcases the scale of the database used for this project.
+
+# Sources:
+
+<https://www.kaggle.com/datasets/orkunaktas/all-football-players-stats-in-top-5-leagues-2324?resource=download>
+
+<https://r-graph-gallery.com>
+
+<https://www.whoscored.com/Statistics>

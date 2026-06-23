@@ -1,0 +1,11 @@
+# Pliki systemowe i tymczasowe
+desktop.ini
+.Rhistory
+
+# Wyniki renderowania Quarto / R
+/Projekt_files/
+*.html
+
+# Zostaw tylko ten plik danych, którego używasz (przykład, jeśli używasz tylko jednego):
+# Jeśli chcesz ignorować nieużywane wersje danych, możesz je wpisać tutaj:
+top5-players.ods
