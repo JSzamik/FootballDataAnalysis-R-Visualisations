@@ -1,0 +1,7 @@
+# Przypisz pliki Quarto (.qmd) bezpośrednio do języka R
+*.qmd linguist-language=R
+
+# Wyklucz wygenerowane pliki podglądu/stron
+*.html linguist-vendored
+*.js linguist-vendored
+*.css linguist-vendored
